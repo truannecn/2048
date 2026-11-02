@@ -1,50 +1,190 @@
+@use "sass:math";
+@use "sass:color";
+@use "sass:list";
 @import "helpers";
-@import "fonts/clear-sans.css";
+
+// ---------------------------------------------------------------------------
+// Futuristic bubble theme
+// ---------------------------------------------------------------------------
 
 $field-width: 500px;
 $grid-spacing: 15px;
 $grid-row-cells: 4;
-$tile-size: ($field-width - $grid-spacing * ($grid-row-cells + 1)) / $grid-row-cells;
-$tile-border-radius: 3px;
 
+@function tile-size($field-width, $grid-spacing) {
+  @return math.div($field-width - $grid-spacing * ($grid-row-cells + 1), $grid-row-cells);
+}
+
+$tile-size: tile-size($field-width, $grid-spacing);
 $mobile-threshold: $field-width + 20px;
 
-$text-color: #776E65;
-$bright-text-color: #f9f6f2;
+// Type
+$font-bubble: "Fredoka", "Varela Round", "Nunito", "Helvetica Neue", Arial, sans-serif;
+$font-tech: "Orbitron", "Fredoka", "Helvetica Neue", Arial, sans-serif;
 
-$tile-color: #eee4da;
-$tile-gold-color: #edc22e;
-$tile-gold-glow-color: lighten($tile-gold-color, 15%);
+// Palette
+$bg-deep: #0b0824;
+$text-color: #d9d5ff;
+$text-dim: #a29cdb;
+$bright-text-color: #ffffff;
+$dark-text-color: #1c1550;
+
+$neon-cyan: #5cf3ff;
+$neon-violet: #a46bff;
+$neon-pink: #ff5ccf;
+$neon-mint: #5cffc4;
+
+$glass: rgba(255, 255, 255, .06);
+$glass-strong: rgba(255, 255, 255, .1);
+$glass-edge: rgba(255, 255, 255, .16);
+
+$neon-gradient: linear-gradient(120deg, $neon-cyan 0%, $neon-violet 50%, $neon-pink 100%);
 
 $game-container-margin-top: 40px;
-$game-container-background: #bbada0;
+$game-container-radius: 32px;
 
 $transition-speed: 100ms;
+
+// Bubble colour for each tile value, and whether its number is light or dark
+$tile-palette: (
+  2:    (#c4f7ff, dark),
+  4:    (#8fe7ff, dark),
+  8:    (#62bcff, light),
+  16:   (#7b88ff, light),
+  32:   (#a06bff, light),
+  64:   (#d05cff, light),
+  128:  (#ff5ccf, light),
+  256:  (#ff5c8d, light),
+  512:  (#ff8a5c, light),
+  1024: (#ffc94d, dark),
+  2048: (#5cffc4, dark)
+);
+
+// A glossy bubble: specular highlight on top of a shaded sphere
+@mixin bubble($c, $glow: 0) {
+  background:
+    radial-gradient(circle at 32% 26%,
+      rgba(255, 255, 255, .95) 0,
+      rgba(255, 255, 255, .5) 9%,
+      rgba(255, 255, 255, 0) 30%),
+    radial-gradient(circle at 50% 58%,
+      color.adjust($c, $lightness: 6%) 0,
+      $c 55%,
+      color.adjust($c, $lightness: -20%) 100%);
+
+  box-shadow:
+    0 0 (6px + $glow * 3px) rgba($c, .25 + $glow * .045),
+    0 8px 18px rgba(0, 0, 0, .35),
+    inset 0 0 0 1px rgba(255, 255, 255, .28),
+    inset -6px -10px 16px rgba(color.adjust($c, $lightness: -32%), .45),
+    inset 4px 6px 12px rgba(255, 255, 255, .3);
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+html {
+  background: $bg-deep;
+}
 
 html, body {
   margin: 0;
   padding: 0;
 
-  background: #faf8ef;
   color: $text-color;
-  font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+  font-family: $font-bubble;
   font-size: 18px;
 }
 
 body {
-  margin: 80px 0;
+  padding: 80px 0;
+  min-height: 100vh;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  overflow-x: hidden;
+
+  background:
+    radial-gradient(circle at 12% 18%, rgba($neon-violet, .32) 0, rgba($neon-violet, 0) 40%),
+    radial-gradient(circle at 88% 12%, rgba($neon-cyan, .22) 0, rgba($neon-cyan, 0) 38%),
+    radial-gradient(circle at 78% 88%, rgba($neon-pink, .25) 0, rgba($neon-pink, 0) 42%),
+    radial-gradient(circle at 20% 92%, rgba($neon-mint, .12) 0, rgba($neon-mint, 0) 36%),
+    $bg-deep;
+  background-attachment: fixed;
+
+  // Floating background bubbles
+  &:before, &:after {
+    content: "";
+    position: fixed;
+    z-index: -1;
+    border-radius: 50%;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 32% 28%, rgba(255, 255, 255, .35) 0, rgba(255, 255, 255, 0) 30%),
+      radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0) 55%, rgba(255, 255, 255, .12) 70%, rgba(255, 255, 255, 0) 72%);
+    box-shadow: inset 0 0 40px rgba($neon-cyan, .12);
+  }
+
+  &:before {
+    width: 260px;
+    height: 260px;
+    top: 14%;
+    left: -60px;
+    @include animation(float 14s ease-in-out infinite);
+  }
+
+  &:after {
+    width: 180px;
+    height: 180px;
+    bottom: 8%;
+    right: -30px;
+    @include animation(float 18s ease-in-out infinite reverse);
+  }
+}
+
+@include keyframes(float) {
+  0%, 100% {
+    @include transform(translateY(0));
+  }
+
+  50% {
+    @include transform(translateY(-40px));
+  }
 }
 
 .heading {
   @include clearfix;
 }
 
+@include keyframes(shimmer) {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
 h1.title {
+  font-family: $font-bubble;
   font-size: 80px;
-  font-weight: bold;
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: 1px;
   margin: 0;
   display: block;
   float: left;
+
+  background: linear-gradient(120deg, $neon-cyan, $neon-violet, $neon-pink, $neon-cyan);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 16px rgba($neon-violet, .55));
+  @include animation(shimmer 8s linear infinite);
 }
 
 @include keyframes(move-up) {
@@ -69,37 +209,48 @@ h1.title {
 
   position: relative;
   display: inline-block;
-  background: $game-container-background;
-  padding: 15px 25px;
-  font-size: $height;
-  height: $height;
-  line-height: $height + 22px;
-  font-weight: bold;
-  border-radius: 3px;
-  color: white;
+  min-width: 48px;
+  margin-left: 6px;
   margin-top: 8px;
+  padding: 15px 25px;
+  height: $height;
+  font-size: $height;
+  line-height: $height + 22px;
+  font-weight: 600;
   text-align: center;
+  color: $bright-text-color;
+
+  background: $glass;
+  border: 1px solid $glass-edge;
+  border-radius: 999px;
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 0 20px rgba($neon-cyan, .15), inset 0 1px 0 rgba(255, 255, 255, .18);
 
   &:after {
     position: absolute;
     width: 100%;
-    top: 10px;
+    top: 11px;
     left: 0;
+    font-family: $font-tech;
+    font-weight: 700;
     text-transform: uppercase;
-    font-size: 13px;
-    line-height: 13px;
+    letter-spacing: 2px;
+    font-size: 9px;
+    line-height: 9px;
     text-align: center;
-    color: $tile-color;
+    color: $neon-cyan;
+    text-shadow: 0 0 8px rgba($neon-cyan, .7);
   }
 
   .score-addition {
     position: absolute;
     right: 30px;
-    color: red;
     font-size: $height;
     line-height: $height;
-    font-weight: bold;
-    color: rgba($text-color, .9);
+    font-weight: 700;
+    color: $neon-cyan;
+    text-shadow: 0 0 10px rgba($neon-cyan, .8);
     z-index: 100;
     @include animation(move-up 600ms ease-in);
     @include animation-fill-mode(both);
@@ -121,21 +272,31 @@ p {
 }
 
 a {
-  color: $text-color;
-  font-weight: bold;
-  text-decoration: underline;
+  color: $neon-cyan;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px solid rgba($neon-cyan, .4);
   cursor: pointer;
 }
 
 strong {
+  color: $bright-text-color;
+  font-weight: 600;
+
   &.important {
+    font-family: $font-tech;
+    font-size: .75em;
+    letter-spacing: 1.5px;
     text-transform: uppercase;
+    color: $neon-pink;
+    text-shadow: 0 0 8px rgba($neon-pink, .5);
   }
 }
 
 hr {
   border: none;
-  border-bottom: 1px solid lighten($text-color, 40%);
+  height: 1px;
+  background: linear-gradient(90deg, rgba($neon-cyan, 0), rgba($neon-violet, .5), rgba($neon-pink, 0));
   margin-top: 20px;
   margin-bottom: 30px;
 }
@@ -155,22 +316,40 @@ hr {
   }
 }
 
-// Styles for buttons
+// Styles for buttons: glowing gradient pills
 @mixin button {
   display: inline-block;
-  background: darken($game-container-background, 20%);
-  border-radius: 3px;
-  padding: 0 20px;
+  background: $neon-gradient;
+  border: none;
+  border-radius: 999px;
+  padding: 0 22px;
+  height: 42px;
+  line-height: 42px;
+
+  font-family: $font-tech;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
   text-decoration: none;
   color: $bright-text-color;
-  height: 40px;
-  line-height: 42px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .3);
+
+  box-shadow: 0 0 18px rgba($neon-violet, .55), inset 0 1px 0 rgba(255, 255, 255, .45);
+  @include transition(transform 150ms ease, box-shadow 150ms ease);
+
+  &:hover {
+    @include transform(translateY(-1px) scale(1.03));
+    box-shadow: 0 0 28px rgba($neon-pink, .65), inset 0 1px 0 rgba(255, 255, 255, .45);
+  }
 }
 
-// Game field mixin used to render CSS at different width
-@mixin game-field {
+// Game field mixin used to render CSS at different widths
+@mixin game-field($field-width, $grid-spacing, $margin-top, $radius) {
+  $tile-size: tile-size($field-width, $grid-spacing);
+
   .game-container {
-    margin-top: $game-container-margin-top;
+    margin-top: $margin-top;
     position: relative;
     padding: $grid-spacing;
 
@@ -185,8 +364,19 @@ hr {
     -ms-touch-action: none;
     touch-action: none;
 
-    background: $game-container-background;
-    border-radius: $tile-border-radius * 2;
+    background:
+      radial-gradient(circle at 20% 0%, rgba($neon-cyan, .12) 0, rgba($neon-cyan, 0) 50%),
+      radial-gradient(circle at 100% 100%, rgba($neon-pink, .12) 0, rgba($neon-pink, 0) 50%),
+      $glass;
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-radius: $radius;
+    box-shadow:
+      0 0 0 1px $glass-edge,
+      0 0 40px rgba($neon-violet, .25),
+      0 30px 60px rgba(0, 0, 0, .45),
+      inset 0 1px 0 rgba(255, 255, 255, .15);
+
     width: $field-width;
     height: $field-width;
     -webkit-box-sizing: border-box;
@@ -201,19 +391,27 @@ hr {
       right: 0;
       bottom: 0;
       left: 0;
-      background: rgba($tile-color, .5);
+      background: rgba($bg-deep, .7);
+      -webkit-backdrop-filter: blur(6px);
+      backdrop-filter: blur(6px);
+      border-radius: $radius;
       z-index: 100;
 
       text-align: center;
 
       p {
         font-size: 60px;
-        font-weight: bold;
+        font-weight: 700;
         height: 60px;
         line-height: 60px;
         margin-top: 222px;
-        // height: $field-width;
-        // line-height: $field-width;
+
+        background: $neon-gradient;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        -webkit-text-fill-color: transparent;
+        filter: drop-shadow(0 0 14px rgba($neon-violet, .6));
       }
 
       .lower {
@@ -224,23 +422,27 @@ hr {
       a {
         @include button;
         margin-left: 9px;
-        // margin-top: 59px;
 
-	&.keep-playing-button {
-	  display: none;
-	}
+        &.keep-playing-button {
+          display: none;
+        }
       }
 
       @include animation(fade-in 800ms ease $transition-speed * 12);
       @include animation-fill-mode(both);
 
       &.game-won {
-        background: rgba($tile-gold-color, .5);
-        color: $bright-text-color;
+        background: rgba(color.adjust($bg-deep, $lightness: 4%), .65);
 
-	a.keep-playing-button {
-	  display: inline-block;
-	}
+        p {
+          background: linear-gradient(120deg, $neon-mint, $neon-cyan, #ffc94d);
+          -webkit-background-clip: text;
+          background-clip: text;
+        }
+
+        a.keep-playing-button {
+          display: inline-block;
+        }
       }
 
       &.game-won, &.game-over {
@@ -268,15 +470,19 @@ hr {
     }
   }
 
+  // Empty slots: soft recessed bubbles
   .grid-cell {
     width: $tile-size;
     height: $tile-size;
     margin-right: $grid-spacing;
     float: left;
 
-    border-radius: $tile-border-radius;
-
-    background: rgba($tile-color, .35);
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, rgba(255, 255, 255, .08) 0, rgba(255, 255, 255, .02) 70%);
+    box-shadow:
+      inset 0 4px 10px rgba(0, 0, 0, .35),
+      inset 0 0 0 1px rgba(255, 255, 255, .06),
+      0 1px 0 rgba(255, 255, 255, .05);
 
     &:last-child {
       margin-right: 0;
@@ -290,17 +496,17 @@ hr {
 
   .tile {
     &, .tile-inner {
-      width: ceil($tile-size);
-      height: ceil($tile-size);
-      line-height: ceil($tile-size);
+      width: math.ceil($tile-size);
+      height: math.ceil($tile-size);
+      line-height: math.ceil($tile-size);
     }
 
     // Build position classes
     @for $x from 1 through $grid-row-cells {
       @for $y from 1 through $grid-row-cells {
         &.tile-position-#{$x}-#{$y} {
-          $xPos: floor(($tile-size + $grid-spacing) * ($x - 1));
-          $yPos: floor(($tile-size + $grid-spacing) * ($y - 1));
+          $xPos: math.floor(($tile-size + $grid-spacing) * ($x - 1));
+          $yPos: math.floor(($tile-size + $grid-spacing) * ($y - 1));
           @include transform(translate($xPos, $yPos));
         }
       }
@@ -309,17 +515,17 @@ hr {
 }
 
 // End of game-field mixin
-@include game-field;
+@include game-field($field-width, $grid-spacing, $game-container-margin-top, $game-container-radius);
 
 .tile {
   position: absolute; // Makes transforms relative to the top-left corner
 
   .tile-inner {
-    border-radius: $tile-border-radius;
+    border-radius: 50%;
 
-    background: $tile-color;
     text-align: center;
-    font-weight: bold;
+    font-family: $font-bubble;
+    font-weight: 600;
     z-index: 10;
 
     font-size: 55px;
@@ -331,61 +537,28 @@ hr {
   -moz-transition-property: -moz-transform;
   transition-property: transform;
 
-  $base: 2;
-  $exponent: 1;
-  $limit: 11;
+  // Build tile colours
+  $glow: 0;
 
-  // Colors for all 11 states, false = no special color
-  $special-colors: false false, // 2
-                   false false, // 4
-                   #f78e48 true, // 8
-                   #fc5e2e true, // 16
-                   #ff3333 true, // 32
-                   #ff0000 true, // 64
-                   false true, // 128
-                   false true, // 256
-                   false true, // 512
-                   false true, // 1024
-                   false true; // 2048
-
-  // Build tile colors
-  @while $exponent <= $limit {
-    $power: pow($base, $exponent);
+  @each $power, $spec in $tile-palette {
+    $c: list.nth($spec, 1);
+    $tone: list.nth($spec, 2);
 
     &.tile-#{$power} .tile-inner {
-      // Calculate base background color
-      $gold-percent: ($exponent - 1) / ($limit - 1) * 100;
-      $mixed-background: mix($tile-gold-color, $tile-color, $gold-percent);
+      @include bubble($c, $glow);
 
-      $nth-color: nth($special-colors, $exponent);
-
-      $special-background: nth($nth-color, 1);
-      $bright-color: nth($nth-color, 2);
-
-      @if $special-background {
-        $mixed-background: mix($special-background, $mixed-background, 55%);
-      }
-
-      @if $bright-color {
+      @if $tone == light {
         color: $bright-text-color;
-      }
-
-      // Set background
-      background: $mixed-background;
-
-      // Add glow
-      $glow-opacity: max($exponent - 4, 0) / ($limit - 4);
-
-      @if not $special-background {
-        box-shadow: 0 0 30px 10px rgba($tile-gold-glow-color, $glow-opacity / 1.8),
-                    inset 0 0 0 1px rgba(white, $glow-opacity / 3);
+        text-shadow: 0 2px 6px rgba(color.adjust($c, $lightness: -35%), .6);
+      } @else {
+        color: $dark-text-color;
+        text-shadow: 0 1px 0 rgba(255, 255, 255, .45);
       }
 
       // Adjust font size for bigger numbers
       @if $power >= 100 and $power < 1000 {
         font-size: 45px;
 
-        // Media queries placed here to avoid carrying over the rest of the logic
         @include smaller($mobile-threshold) {
           font-size: 25px;
         }
@@ -398,13 +571,26 @@ hr {
       }
     }
 
-    $exponent: $exponent + 1;
+    $glow: $glow + 1;
   }
 
-  // Super tiles (above 2048)
+  // The winning bubble pulses
+  &.tile-2048 .tile-inner {
+    @include animation(pulse-glow 2s ease-in-out infinite);
+  }
+
+  // Super tiles (above 2048): iridescent bubble
   &.tile-super .tile-inner {
     color: $bright-text-color;
-    background: mix(#333, $tile-gold-color, 95%);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, .5);
+    background:
+      radial-gradient(circle at 32% 26%, rgba(255, 255, 255, .95) 0, rgba(255, 255, 255, .5) 9%, rgba(255, 255, 255, 0) 30%),
+      conic-gradient(from 200deg, $neon-cyan, $neon-violet, $neon-pink, #ffc94d, $neon-mint, $neon-cyan);
+    box-shadow:
+      0 0 40px rgba($neon-pink, .6),
+      0 8px 18px rgba(0, 0, 0, .35),
+      inset 0 0 0 1px rgba(255, 255, 255, .3),
+      inset -6px -10px 16px rgba(0, 0, 0, .3);
 
     font-size: 30px;
 
@@ -414,10 +600,30 @@ hr {
   }
 }
 
+@include keyframes(pulse-glow) {
+  0%, 100% {
+    filter: brightness(1);
+  }
+
+  50% {
+    filter: brightness(1.15) drop-shadow(0 0 14px rgba($neon-mint, .9));
+  }
+}
+
+// Bubbles inflate with a little wobble
 @include keyframes(appear) {
   0% {
     opacity: 0;
     @include transform(scale(0));
+  }
+
+  60% {
+    opacity: 1;
+    @include transform(scale(1.12));
+  }
+
+  80% {
+    @include transform(scale(.95));
   }
 
   100% {
@@ -427,7 +633,7 @@ hr {
 }
 
 .tile-new .tile-inner {
-  @include animation(appear 200ms ease $transition-speed);
+  @include animation(appear 260ms ease $transition-speed);
   @include animation-fill-mode(backwards);
 }
 
@@ -437,7 +643,11 @@ hr {
   }
 
   50% {
-    @include transform(scale(1.2));
+    @include transform(scale(1.25));
+  }
+
+  75% {
+    @include transform(scale(.94));
   }
 
   100% {
@@ -447,7 +657,7 @@ hr {
 
 .tile-merged .tile-inner {
   z-index: 20;
-  @include animation(pop 200ms ease $transition-speed);
+  @include animation(pop 240ms ease $transition-speed);
   @include animation-fill-mode(backwards);
 }
 
@@ -459,6 +669,7 @@ hr {
   float: left;
   line-height: 42px;
   margin-bottom: 0;
+  color: $text-dim;
 }
 
 .restart-button {
@@ -473,12 +684,9 @@ hr {
 }
 
 @include smaller($mobile-threshold) {
-  // Redefine variables for smaller screens
+  // Redefine sizes for smaller screens
   $field-width: 280px;
   $grid-spacing: 10px;
-  $grid-row-cells: 4;
-  $tile-size: ($field-width - $grid-spacing * ($grid-row-cells + 1)) / $grid-row-cells;
-  $tile-border-radius: 3px;
   $game-container-margin-top: 17px;
 
   html, body {
@@ -486,13 +694,12 @@ hr {
   }
 
   body {
-    margin: 20px 0;
-    padding: 0 20px;
+    padding: 20px;
   }
 
   h1.title {
-    font-size: 27px;
-    margin-top: 15px;
+    font-size: 34px;
+    margin-top: 12px;
   }
 
   .container {
@@ -524,14 +731,15 @@ hr {
     display: block;
     box-sizing: border-box;
     margin-top: 2px;
+    font-size: 11px;
   }
 
   // Render the game field at the right width
-  @include game-field;
+  @include game-field($field-width, $grid-spacing, $game-container-margin-top, 22px);
 
   // Rest of the font-size adjustments in the tile class
   .tile .tile-inner {
-    font-size: 35px;
+    font-size: 30px;
   }
 
   .game-message {
